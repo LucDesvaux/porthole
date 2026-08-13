@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../extension/popup.css">
+<style>
+  html, body {
+    width: 1280px; height: 800px; max-height: none;
+    overflow: hidden; padding: 0; margin: 0;
+  }
+  body {
+    background: radial-gradient(1000px 600px at 78% 40%, #16222e 0%, #0a0e12 62%);
+    display: flex; align-items: center; justify-content: center; gap: 70px;
+  }
+  .pitch { width: 470px; }
+  .pitch h2 {
+    font-size: 40px; line-height: 1.15; letter-spacing: -.5px;
+    color: var(--text); font-weight: 800; margin-bottom: 18px;
+  }
+  .pitch h2 em { font-style: normal; color: var(--green); }
+  .pitch p { color: var(--muted); font-size: 16px; line-height: 1.6; margin-bottom: 22px; }
+  .pitch li {
+    list-style: none; color: var(--text); font-size: 15px;
+    padding: 5px 0 5px 24px; position: relative;
+  }
+  .pitch li::before { content: "▸"; position: absolute; left: 4px; color: var(--cyan); }
+  .frame {
+    width: 420px; padding: 14px;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    box-shadow: 0 30px 70px rgba(0,0,0,.6), 0 0 0 1px rgba(55,214,240,.14);
+  }
+  /* popup.css targets body; re-apply the same rules to the mock frame */
+  .frame { font: 12px/1.5 "SF Mono", ui-monospace, Menlo, monospace; color: var(--text); }
+  .scanlines { position: absolute; inset: 0; }
+  /* static capture: hold every pulse/blink at full opacity */
+  * { animation: none !important; }
+</style>
+</head>
+<body>
+  <div class="pitch">
+    <h2>Every local server,<br><em>grouped by project.</em></h2>
+    <p>Vite, Astro, Next, Supabase stacks in Docker — PortHole finds them all and tells you which project each one belongs to.</p>
+    <ul>
+      <li>Click a card to open it</li>
+      <li>Start, restart and stop whole projects</li>
+      <li>Pin a fixed port to each project</li>
+      <li>Health dots catch hung servers</li>
+      <li>No data collected, ever</li>
+    </ul>
+  </div>
+
+  <div class="frame">
+    <header>
+      <h1><span class="prompt">&gt;_</span> PORT<span class="accent">HOLE</span></h1>
+      <div class="hud"><span class="badge">07</span><button id="refresh">RESCAN</button></div>
+    </header>
+    <div id="content">
+      <div class="group">
+        <div class="group-head">
+          <div class="group-name">acme-web</div>
+          <div class="group-actions">
+            <button class="act">LOG</button><button class="act">RESTART</button><button class="act stop">STOP</button>
+          </div>
+        </div>
+        <div class="server clickable">
+          <span class="dot">●</span>
+          <div class="main">
+            <div><span class="link">Vite</span> <span class="port">:5173</span><span class="tag">FE</span></div>
+            <div class="meta">~/Projects/acme-web</div>
+          </div>
+          <button class="copy">⧉</button><button class="kill">KILL</button>
+        </div>
+        <div class="server clickable">
+          <span class="dot">●</span>
+          <div class="main">
+            <div><span class="link">Supabase API</span> <span class="port">:54321</span></div>
+            <div class="meta">pid 4021 · com.docker.backend</div>
+          </div>
+          <button class="copy">⧉</button><button class="kill">KILL</button>
+        </div>
+        <div class="server no-http">
+          <span class="dot">●</span>
+          <div class="main">
+            <div><span class="label-plain">Supabase DB</span> <span class="port">:54322</span></div>
+            <div class="meta">pid 4021 · com.docker.backend</div>
+          </div>
+          <button class="copy">⧉</button><button class="kill">KILL</button>
+        </div>
+        <div class="server clickable">
+          <span class="dot">●</span>
+          <div class="main">
+            <div><span class="link">Supabase Studio</span> <span class="port">:54323</span></div>
+            <div class="meta">pid 4021 · com.docker.backend</div>
+          </div>
+          <button class="copy">⧉</button><button class="kill">KILL</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-head">
+          <div class="group-name">docs-site</div>
+          <div class="group-actions"><button class="act">RESTART</button><button class="act stop">STOP</button></div>
+        </div>
+        <div class="server clickable">
+          <span class="dot">●</span>
+          <div class="main">
+            <div><span class="link">Astro</span> <span class="port">:4321</span><span class="tag">FE</span></div>
+            <div class="meta">~/Projects/docs-site</div>
+          </div>
+          <button class="copy">⧉</button><button class="kill">KILL</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-head">
+          <div class="group-name">acme-api</div>
+          <div class="group-actions"><button class="act">LOG</button><button class="act stop">STOP</button></div>
+        </div>
+        <div class="server clickable">
+          <span class="dot down">●</span>
+          <div class="main">
+            <div><span class="link">Node.js</span> <span class="port">:8080</span><span class="tag">FE</span></div>
+            <div class="meta">~/Projects/acme-api</div>
+          </div>
+          <button class="copy">⧉</button><button class="kill">KILL</button>
+        </div>
+      </div>
+
+      <div class="section">// OFFLINE PROJECTS</div>
+      <div class="group">
+        <div class="group-head">
+          <div class="group-name">marketing-site</div>
+          <div class="group-actions"><button class="act go">START APP</button><button class="act go">START DB</button></div>
+        </div>
+        <div class="meta idle">offline · pinned :5273</div>
+      </div>
+      <div class="stopall-bar"><button class="act stop">STOP ALL</button></div>
+    </div>
+    <footer id="status">native host · last scan 09:41:22</footer>
+  </div>
+</body>
+</html>

@@ -3,3 +3,5 @@
 helper/run-host.sh
 # personal project registry — copy helper/projects.example.json to projects.json
 helper/projects.json
+# built store package — regenerate with ./store/build.sh
+store/porthole.zip
