@@ -17,7 +17,7 @@ const PORTHOLE_DIR = path.join(HOME, ".porthole");
 
 // Chrome Web Store ID of the published PortHole extension.
 // Filled in after the first draft upload to the dashboard.
-const PUBLISHED_ID = "";
+const PUBLISHED_ID = "aaegnkafelpdhejlgccooadkgibamkkl";
 
 const HOST_DIRS = process.platform === "darwin" ? [
   "Library/Application Support/Google/Chrome/NativeMessagingHosts",
