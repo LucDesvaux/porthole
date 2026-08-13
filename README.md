@@ -1,6 +1,13 @@
-# PortHole
+<p align="center">
+  <img src="extension/porthole-black.png#gh-light-mode-only" width="96" alt="PortHole">
+  <img src="extension/porthole-white.png#gh-dark-mode-only" width="96" alt="PortHole">
+</p>
+
+<h1 align="center">PortHole</h1>
 
 A window onto your local dev servers. See what's running on your Mac — grouped by project, straight from a Chrome toolbar popup — open them, start them, restart them, kill them, and pin each project to its own port.
+
+![PortHole popup showing dev servers grouped by project](store/screenshot-1.png)
 
 macOS is the tested platform. Linux paths are included in the installer but untested; Windows is not supported yet (the port scan uses `lsof`). Requires Node.js.
 
