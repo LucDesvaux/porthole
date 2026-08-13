@@ -32,7 +32,7 @@ To build the list you see, the companion program reads, on your machine only:
 - listening TCP ports and the processes that own them (via `lsof`)
 - the working directory of those processes, to group them by project
 - running Docker container names (via `docker ps`), to identify Supabase services
-- a project registry file you create yourself (`helper/projects.json`)
+- a project registry file you create yourself (`~/.porthole/projects.json`)
 - log files that PortHole itself wrote, for servers you started through it
 
 This information is passed to the extension popup for display and is discarded

@@ -77,15 +77,14 @@ permissions. Everything happens on your own machine.
 REQUIRES A ONE-TIME LOCAL SETUP
 
 A browser extension cannot see which ports are open on your computer — that's a
-security boundary Chrome enforces. PortHole therefore ships with a small
-open-source companion program (Node.js, no dependencies) that you install once
-from GitHub:
+security boundary Chrome enforces. PortHole therefore uses a small open-source
+companion program (Node.js, zero dependencies). After installing the extension,
+the popup shows the single command to run, with your extension ID filled in:
 
-  git clone https://github.com/LucDesvaux/porthole
-  cd porthole && ./helper/install.sh
+  npx porthole-helper install <extension-id>
 
-Chrome starts the companion only when you open the popup, and it exits straight
-after answering. Nothing runs in the background.
+That's the whole setup. Chrome starts the companion only when you open the
+popup, and it exits straight after answering. Nothing runs in the background.
 
 Currently supports macOS (Linux is included but untested). Requires Node.js.
 
@@ -129,21 +128,21 @@ https://github.com/LucDesvaux/porthole/blob/main/PRIVACY.md
 ## Reviewer notes (Account tab → "Notes for reviewers")
 
 ```
-Testing this extension requires the companion native messaging host, since the
-popup has nothing to display without it. Without the host installed the popup
-shows "HELPER NOT CONNECTED" — that is the expected fallback, not a bug.
+Testing this extension requires its companion native messaging host, since the
+popup has nothing to display without it. Without the host installed, the popup
+shows a "ONE-TIME SETUP" screen with the install command — that is the intended
+onboarding flow, not an error.
 
-To test on macOS or Linux with Node.js installed:
+To test on macOS or Linux with Node.js installed, run the command the popup
+displays (it includes the extension ID automatically):
 
-  git clone https://github.com/LucDesvaux/porthole
-  cd porthole
-  ./helper/install.sh <the extension ID assigned to this item>
+  npx porthole-helper install <extension-id>
 
 Then start any local web server (for example `python3 -m http.server 8000`) and
 open the popup — it will be listed, and clicking it opens the page.
 
-Full source, including the companion program, is at
-https://github.com/LucDesvaux/porthole
+The npm package is `porthole-helper`; full source for both the extension and
+the companion is at https://github.com/LucDesvaux/porthole
 ```
 
 ---
@@ -166,8 +165,10 @@ https://github.com/LucDesvaux/porthole
 2. **Add new item** → upload `store/porthole.zip`. Do not publish yet.
 3. Copy the item ID from the dashboard URL (32 letters) — this is the permanent
    extension ID.
-4. Put it into `helper/install.sh` as `PUBLISHED_ID="…"`, commit, and push, so
-   people installing from the store register the right ID.
+4. Put it into `helper/cli.js` as `PUBLISHED_ID = "…"`, bump the package
+   version, and `npm publish` from `helper/`, so `npx porthole-helper install`
+   works even without pasting the ID. (The popup passes the ID explicitly
+   anyway, so this is belt-and-braces, not a blocker.)
 5. Fill in the listing using the copy above, upload the graphics, complete the
    Privacy practices tab, and paste the reviewer notes.
 6. Submit for review. Expect a few days; extensions using native messaging are

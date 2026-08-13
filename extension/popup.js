@@ -109,7 +109,7 @@ function renderProject(p) {
   const actions = elem("div", "group-actions");
   for (const what of p.logs || []) {
     const key = `${p.name}/${what}`;
-    const b = actionBtn("act", what === "app" ? "LOG" : "DB LOG", `tail ~/.local-servers-logs/${p.name}-${what}.log`,
+    const b = actionBtn("act", what === "app" ? "LOG" : "DB LOG", `tail ~/.porthole/logs/${p.name}-${what}.log`,
       async (btn) => {
         btn.disabled = false;
         if (openLogs.has(key)) { openLogs.delete(key); load(); return; }
@@ -185,19 +185,30 @@ function render(data) {
   statusEl.textContent = `native host · last scan ${new Date(data.generatedAt).toLocaleTimeString()}`;
 }
 
-function renderError(message) {
+function renderError() {
   content.textContent = "";
   countEl.textContent = "--";
-  const box = elem("div", "error");
-  const p1 = elem("p");
-  p1.appendChild(elem("strong", "", "HELPER NOT CONNECTED"));
-  const p2 = elem("p", "muted", "Register the native helper with:");
-  const p3 = elem("p");
-  p3.appendChild(elem("code", "", "./helper/install.sh"));
-  const p4 = elem("p", "muted", message || "then reload this extension (see README).");
-  box.append(p1, p2, p3, p4);
+  const box = elem("div", "onboard");
+  box.appendChild(elem("p", "onboard-title", "ONE-TIME SETUP"));
+  box.appendChild(elem("p", "muted",
+    "Chrome can't see your local ports — a small open-source helper does the scanning. Install it once (needs Node.js):"));
+
+  const cmd = `npx porthole-helper install ${chrome.runtime.id}`;
+  const cmdRow = elem("div", "cmd");
+  cmdRow.appendChild(elem("code", "", cmd));
+  cmdRow.appendChild(copyBtn(cmd, "copy command"));
+  box.appendChild(cmdRow);
+
+  box.appendChild(elem("p", "muted", "Run it in any terminal, then click RESCAN above."));
+  const src = elem("a", "srclink", "source code & docs →");
+  src.href = "https://github.com/LucDesvaux/porthole";
+  src.addEventListener("click", (e) => {
+    e.preventDefault();
+    chrome.tabs.create({ url: src.href });
+  });
+  box.appendChild(src);
   content.appendChild(box);
-  statusEl.textContent = "native host · unreachable";
+  statusEl.textContent = "helper not installed";
 }
 
 let loading = false;
@@ -207,7 +218,10 @@ async function load() {
   try {
     render(await native({ cmd: "servers" }));
   } catch (e) {
-    renderError(e.message);
+    renderError();
+    if (e.message && !/not found|native messaging host/i.test(e.message)) {
+      statusEl.textContent = "ERROR: " + e.message;
+    }
   } finally {
     loading = false;
   }

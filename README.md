@@ -9,13 +9,27 @@ Two parts:
 - **`helper/`** — a zero-dependency Node **native messaging host** (`host.js` + `core.js`). Chrome spawns it on demand; nothing runs in the background. It scans listening TCP ports with `lsof`, labels them (Vite, Next.js, Supabase API/Studio/DB, Postgres, …), and **groups servers by project**: regular processes via their working directory, Docker/Supabase ports via `docker ps` container names (`supabase_studio_<project>` → project). It can kill servers (SIGTERM / `docker stop`), start, restart, and stop whole projects. OS/app noise (Dropbox, Raycast, AirPlay, …) is filtered out, and the host only answers the extension ID registered at install time.
 - **`extension/`** — a Manifest V3 Chrome extension with a terminal-styled popup: servers grouped by project, click a card to open it (non-HTTP ports like Postgres shown but not clickable), KILL/START/RESTART/STOP controls, log viewer, health dots.
 
-## Setup
+## Setup (Chrome Web Store install)
 
-1. **Load the extension**
-   - Open `chrome://extensions`
-   - Enable **Developer mode** (top right)
+1. Install PortHole from the Chrome Web Store and pin it to the toolbar.
+2. Open the popup — it shows a one-time setup command with your extension ID
+   filled in. Run it in any terminal:
+
+   ```bash
+   npx porthole-helper install <extension-id>
+   ```
+
+3. Click RESCAN in the popup.
+
+The helper is copied to `~/.porthole/` and registered with every Chrome-family
+browser. No always-on process: Chrome launches it per request and it exits
+after answering.
+
+## Setup (developing from this repo)
+
+1. **Load the extension unpacked**
+   - Open `chrome://extensions`, enable **Developer mode**
    - Click **Load unpacked** and select the `extension/` folder
-   - Pin "PortHole" to the toolbar
 
 2. **Register the native helper**
 
@@ -23,13 +37,10 @@ Two parts:
    ./helper/install.sh
    ```
 
-   This derives the unpacked extension's ID from its path and writes the
-   `com.porthole.helper` manifest into every installed Chrome-family browser.
-   If the popup says HELPER NOT CONNECTED, the derived ID didn't match — copy
-   the real ID from `chrome://extensions` and rerun `./helper/install.sh <id>`.
-
-No always-on process needed: Chrome launches `helper/host.js` per request and it
-exits after answering.
+   This derives the unpacked extension's ID from its path and registers it via
+   the same CLI end users get from npm. If the popup still says it can't
+   connect, copy the real ID from `chrome://extensions` and rerun
+   `./helper/install.sh <id>`.
 
 ## Publishing to the Chrome Web Store
 
@@ -51,9 +62,12 @@ installer allows several IDs at once, so store and unpacked-dev installs coexist
 `GET /servers`, `POST /kill?type=&target=`, `POST /start?project=&what=app|supabase`,
 `POST /restart?project=`, `GET /logs?project=&what=`, `POST /stop?project=`, `POST /stopall`.
 
-## Project registry (`helper/projects.json`)
+## Project registry
 
-Copy `helper/projects.example.json` to `helper/projects.json` (git-ignored — it's personal to your machine) and map each project to its directory, start command, pinned port, and whether it has a Supabase stack:
+Create `~/.porthole/projects.json` (an example lands next to it at install
+time; repo developers can use a git-ignored `helper/projects.json` instead) and
+map each project to its directory, start command, pinned port, and whether it
+has a Supabase stack:
 
 ```json
 "my-app": {
@@ -67,7 +81,7 @@ Copy `helper/projects.example.json` to `helper/projects.json` (git-ignored — i
 - Registered projects appear in the popup even when **offline**, with **START APP** / **START DB** buttons; running ones get **RESTART**.
 - `$PORT` in the start command (and the `PORT` env var) is filled from `port` — that's how a project always gets the same port. Works with `vite --port`, `astro dev --port`, Next.js (`PORT` env), etc.
 - **START DB** runs `npx supabase start` in the project dir (takes ~30s; hit RESCAN).
-- Start/restart output is logged to `~/.local-servers-logs/<project>-<what>.log`.
+- Start/restart output is logged to `~/.porthole/logs/<project>-<what>.log`.
 - The file is re-read on every request — edit it and just reopen the popup.
 
 ## Other features

@@ -13,8 +13,13 @@ const path = require("path");
 const { execFile, spawn } = require("child_process");
 
 const HELPER_PORT = 7799;
-const REGISTRY_PATH = path.join(__dirname, "projects.json");
-const LOG_DIR = path.join(os.homedir(), ".local-servers-logs");
+const PORTHOLE_DIR = path.join(os.homedir(), ".porthole");
+// ~/.porthole/projects.json for npm installs; repo-local file for development
+const REGISTRY_CANDIDATES = [
+  path.join(PORTHOLE_DIR, "projects.json"),
+  path.join(__dirname, "projects.json"),
+];
+const LOG_DIR = path.join(PORTHOLE_DIR, "logs");
 
 const KNOWN_PORTS = {
   3000: "Next.js / dev",
@@ -46,11 +51,14 @@ function sh(cmd, args, timeout = 5000) {
 }
 
 function loadRegistry() {
-  try {
-    return JSON.parse(fs.readFileSync(REGISTRY_PATH, "utf8"));
-  } catch {
-    return {};
+  for (const p of REGISTRY_CANDIDATES) {
+    try {
+      return JSON.parse(fs.readFileSync(p, "utf8"));
+    } catch {
+      // try next candidate
+    }
   }
+  return {};
 }
 
 async function getCwd(pid) {

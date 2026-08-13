@@ -134,6 +134,17 @@ footer {
 .error { border: 1px solid var(--red); border-radius: 3px; padding: 10px; }
 .error strong { color: var(--red); }
 code { color: var(--green); }
+.onboard { border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+.onboard-title { color: var(--amber); letter-spacing: 1px; font-weight: 700; margin-bottom: 8px; }
+.onboard p { margin-bottom: 10px; }
+.cmd {
+  display: flex; align-items: center; gap: 6px;
+  background: #05080b; border: 1px solid var(--border); border-radius: 4px;
+  padding: 8px 10px; margin-bottom: 10px;
+}
+.cmd code { flex: 1; word-break: break-all; font-size: 11px; }
+.srclink { color: var(--cyan); text-decoration: none; font-size: 11px; }
+.srclink:hover { text-shadow: 0 0 6px var(--cyan); }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
