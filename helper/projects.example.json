@@ -1,0 +1,14 @@
+{
+  "my-app": {
+    "dir": "/Users/you/Projects/my-app",
+    "start": "npm run dev -- --port $PORT",
+    "port": 5173,
+    "supabase": true
+  },
+  "my-site": {
+    "dir": "/Users/you/Projects/my-site",
+    "start": "npm run dev -- --port $PORT",
+    "port": 4321,
+    "supabase": false
+  }
+}

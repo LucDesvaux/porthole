@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="scanlines"></div>
+  <header>
+    <h1><span class="prompt">&gt;_</span> PORT<span class="accent">HOLE</span></h1>
+    <div class="hud">
+      <span id="count" class="badge">--</span>
+      <button id="refresh" title="Rescan ports">RESCAN</button>
+    </div>
+  </header>
+  <div id="content"><p class="muted blink">SCANNING PORTS…</p></div>
+  <footer id="status">native host</footer>
+  <script src="popup.js"></script>
+</body>
+</html>
