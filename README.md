@@ -40,8 +40,8 @@ exits after answering.
 Copy `helper/projects.example.json` to `helper/projects.json` (git-ignored — it's personal to your machine) and map each project to its directory, start command, pinned port, and whether it has a Supabase stack:
 
 ```json
-"boekie": {
-  "dir": "/path/to/boekie",
+"my-app": {
+  "dir": "/path/to/my-app",
   "start": "npm run dev -- --port $PORT",
   "port": 5173,
   "supabase": true
