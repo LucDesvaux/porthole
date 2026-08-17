@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PortHole",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "A window onto your local dev servers — see, open, start, and kill them, grouped by project.",
   "icons": {
     "16": "icon16.png",

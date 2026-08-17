@@ -131,6 +131,16 @@ function renderProject(p) {
       actions.appendChild(actionBtn("act go", "START DB", "npx supabase start (takes ~30s)",
         () => post({ cmd: "start", project: p.name, what: "supabase" }, `starting supabase for ${p.name}… (~30s)`, 8000)));
     }
+  } else {
+    // Not in the registry yet — offer one-click setup when a running process
+    // tells us where the project lives
+    const app = p.servers.find((s) => s.kind === "app" && s.cwd && s.cwd !== "/");
+    if (app) {
+      actions.appendChild(actionBtn("act add", "+ SETUP",
+        `add ${p.name} to the registry (pins :${app.port}) to enable start, restart and stop`,
+        () => post({ cmd: "register", project: p.name, dir: app.cwd, port: app.port },
+                   `${p.name} added — start/restart enabled`, 600)));
+    }
   }
   if (p.servers.length) {
     actions.appendChild(actionBtn("act stop", "STOP", "stop app + supabase for this project",

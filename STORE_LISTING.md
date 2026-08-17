@@ -47,9 +47,10 @@ WHAT YOU GET
 • One click to open. Click any server card to open it in a new tab. Ports that
   aren't web servers (Postgres, Redis) are listed but not clickable.
 
-• Start, restart and stop. Register a project once with its folder and start
-  command, and PortHole can launch it, restart it, or shut it down — app and
-  Supabase stack together — without touching a terminal.
+• Start, restart and stop. Click SETUP once on any running project — PortHole
+  works out its folder, start command and port for you — and from then on it can
+  launch it, restart it, or shut it down, app and Supabase stack together,
+  without touching a terminal.
 
 • Pinned ports. Give each project a fixed port in the registry and it gets that
   port every time. If something else has squatted on it, PortHole warns you and

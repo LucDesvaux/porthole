@@ -71,10 +71,19 @@ installer allows several IDs at once, so store and unpacked-dev installs coexist
 
 ## Project registry
 
-Create `~/.porthole/projects.json` (an example lands next to it at install
-time; repo developers can use a git-ignored `helper/projects.json` instead) and
-map each project to its directory, start command, pinned port, and whether it
-has a Supabase stack:
+Without a registry PortHole still lists, opens, and kills servers — the registry
+is what unlocks START / RESTART / STOP, pinned ports, and conflict warnings.
+
+**The easy way:** any running project that isn't registered yet gets a dashed
+**+ SETUP** button. One click writes the entry for you — directory from the
+process's working directory, start command inferred from `package.json`
+(`dev`, else `start`), the port it's already using pinned, and Supabase detected
+from `supabase/config.toml`. Nothing to type.
+
+**By hand:** create `~/.porthole/projects.json` (an example lands next to it at
+install time; repo developers can use a git-ignored `helper/projects.json`
+instead) mapping each project to its directory, start command, pinned port, and
+whether it has a Supabase stack:
 
 ```json
 "my-app": {

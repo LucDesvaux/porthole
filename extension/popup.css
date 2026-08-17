@@ -56,6 +56,8 @@ h1 { font-size: 14px; letter-spacing: 1px; color: var(--text); font-weight: 700;
 .act.go { color: var(--green); }
 .act.go:hover { border-color: var(--green); text-shadow: 0 0 6px var(--green); }
 .act:disabled { opacity: .5; cursor: wait; }
+.act.add { color: var(--muted); border-style: dashed; }
+.act.add:hover { color: var(--green); border-color: var(--green); border-style: solid; }
 .act.stop { color: var(--amber); }
 .act.stop:hover { border-color: var(--amber); text-shadow: 0 0 6px var(--amber); }
 .section { color: var(--muted); font-size: 10px; letter-spacing: 1px; margin: 14px 0 8px; }

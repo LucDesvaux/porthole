@@ -61,6 +61,53 @@ function loadRegistry() {
   return {};
 }
 
+// Where to write the registry: whichever candidate exists, else ~/.porthole
+function registryPath() {
+  return REGISTRY_CANDIDATES.find((p) => fs.existsSync(p)) || REGISTRY_CANDIDATES[0];
+}
+
+// Work out a start command from package.json. Frameworks whose dev script
+// accepts a --port flag get one; everything else relies on the PORT env var
+// that startProject already sets.
+function inferStart(dir) {
+  let scripts;
+  try {
+    scripts = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")).scripts || {};
+  } catch {
+    return null;
+  }
+  const name = scripts.dev ? "dev" : scripts.start ? "start" : null;
+  if (!name) return null;
+  const takesPortFlag = /\b(vite|astro|next|nuxt|remix|svelte-kit|serve|http-server)\b/.test(String(scripts[name]));
+  return takesPortFlag ? `npm run ${name} -- --port $PORT` : `npm run ${name}`;
+}
+
+function pickPort(preferred, registry) {
+  const taken = new Set(Object.values(registry).map((c) => c.port).filter(Boolean));
+  if (preferred && !taken.has(preferred)) return preferred;
+  for (let p = 5173; p < 6000; p++) if (!taken.has(p)) return p;
+  return null;
+}
+
+// One-click registration for a project we can see running: the directory comes
+// from the process's cwd, so nothing has to be typed by hand.
+function registerProject({ project, dir, port }) {
+  if (!project || !dir) throw new Error("project and dir are required");
+  if (!fs.existsSync(dir)) throw new Error(`directory not found: ${dir}`);
+  const registry = loadRegistry();
+  if (registry[project]) throw new Error(`"${project}" is already in the registry`);
+  const start = inferStart(dir);
+  if (!start) throw new Error(`no dev or start script in ${dir}/package.json — add this one by hand`);
+  // only claim a Supabase stack if it lives under this dir, since `supabase
+  // start` runs here
+  const supabase = fs.existsSync(path.join(dir, "supabase", "config.toml"));
+  registry[project] = { dir, start, port: pickPort(Number(port) || null, registry), supabase };
+  const target = registryPath();
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, JSON.stringify(registry, null, 2) + "\n");
+  return { ok: true, project, entry: registry[project], registry: target };
+}
+
 async function getCwd(pid) {
   const out = await sh("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"], 3000);
   if (!out) return null;
@@ -306,6 +353,8 @@ async function handle(msg) {
       return { ok: true, ...(await restartProject(msg.project)) };
     case "logs":
       return tailLog(msg.project, msg.what || "app");
+    case "register":
+      return registerProject(msg);
     case "stop":
       return { ok: true, ...(await stopProject(msg.project, await buildReport())) };
     case "stopall": {
