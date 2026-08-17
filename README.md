@@ -96,7 +96,10 @@ whether it has a Supabase stack:
 
 - Registered projects appear in the popup even when **offline**, with **START APP** / **START DB** buttons; running ones get **RESTART**.
 - `$PORT` in the start command (and the `PORT` env var) is filled from `port` — that's how a project always gets the same port. Works with `vite --port`, `astro dev --port`, Next.js (`PORT` env), etc.
-- **START DB** runs `npx supabase start` in the project dir (takes ~30s; hit RESCAN).
+- **START DB** runs `npx supabase start` in the project dir. The first run for a
+  stack pulls Docker images and can take several minutes — the project shows a
+  live **STARTING SUPABASE** row with elapsed time and the latest log line until
+  it finishes, and that survives closing and reopening the popup.
 - Start/restart output is logged to `~/.porthole/logs/<project>-<what>.log`.
 - The file is re-read on every request — edit it and just reopen the popup.
 

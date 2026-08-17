@@ -1,6 +1,6 @@
 {
   "name": "porthole-helper",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Native messaging helper for the PortHole Chrome extension \u2014 see, open, start, and kill your local dev servers.",
   "bin": {
     "porthole-helper": "cli.js"

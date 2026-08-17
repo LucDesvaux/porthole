@@ -61,6 +61,59 @@ function loadRegistry() {
   return {};
 }
 
+// Long operations (npx supabase start can pull hundreds of MB of Docker
+// images) outlive the popup, and the host exits after every request — so
+// in-flight work is tracked in a file, keyed by project+what.
+const PENDING_PATH = path.join(PORTHOLE_DIR, "pending.json");
+const PENDING_MAX_MS = 30 * 60 * 1000;
+
+function alive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return e.code === "EPERM"; // exists, just not ours to signal
+  }
+}
+
+function readPending() {
+  let all = {};
+  try {
+    all = JSON.parse(fs.readFileSync(PENDING_PATH, "utf8"));
+  } catch {
+    return {};
+  }
+  const now = Date.now();
+  const live = {};
+  for (const [key, p] of Object.entries(all)) {
+    if (alive(p.pid) && now - p.startedAt < PENDING_MAX_MS) live[key] = p;
+  }
+  if (Object.keys(live).length !== Object.keys(all).length) writePending(live);
+  return live;
+}
+
+function writePending(obj) {
+  try {
+    fs.mkdirSync(PORTHOLE_DIR, { recursive: true });
+    fs.writeFileSync(PENDING_PATH, JSON.stringify(obj, null, 2));
+  } catch {
+    // best effort — progress display is not worth failing a start over
+  }
+}
+
+// Last meaningful line of a log, for "Pulling fs layer…" style progress
+function lastLogLine(project, what) {
+  try {
+    const raw = fs.readFileSync(path.join(LOG_DIR, `${project}-${what}.log`), "utf8");
+    const lines = raw.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "").split("\n")
+      .map((l) => l.trim()).filter(Boolean);
+    const line = lines[lines.length - 1] || "";
+    return line.length > 70 ? line.slice(0, 69) + "…" : line;
+  } catch {
+    return "";
+  }
+}
+
 // Where to write the registry: whichever candidate exists, else ~/.porthole
 function registryPath() {
   return REGISTRY_CANDIDATES.find((p) => fs.existsSync(p)) || REGISTRY_CANDIDATES[0];
@@ -237,9 +290,18 @@ async function buildReport() {
     if (!groups.has(name)) groups.set(name, []);
   }
 
+  const pending = readPending();
+  // A start that's still running should get a card even if nothing listens yet
+  for (const p of Object.values(pending)) {
+    if (!groups.has(p.project)) groups.set(p.project, []);
+  }
+
   const projects = [...groups.entries()].map(([name, servers]) => {
     const cfg = registry[name] || null;
     const appRunning = servers.some((s) => s.kind === "app");
+    const busy = Object.values(pending)
+      .filter((p) => p.project === name)
+      .map((p) => ({ what: p.what, startedAt: p.startedAt, last: lastLogLine(name, p.what) }));
     // Someone else squatting on this project's pinned port?
     let conflict = null;
     if (cfg && cfg.port && !appRunning) {
@@ -256,6 +318,7 @@ async function buildReport() {
       supabaseRunning: servers.some((s) => s.kind === "supabase"),
       hasSupabase: cfg ? !!cfg.supabase : servers.some((s) => s.kind === "supabase"),
       conflict,
+      pending: busy,
       logs: ["app", "supabase"].filter((w) =>
         fs.existsSync(path.join(LOG_DIR, `${name}-${w}.log`))),
     };
@@ -281,6 +344,11 @@ function startProject(name, what) {
     stdio: ["ignore", log, log],
   });
   child.unref();
+  // Record it so the popup can show progress across reopens — a Supabase
+  // start can take minutes when Docker images need pulling
+  const pending = readPending();
+  pending[`${name}::${what}`] = { project: name, what, pid: child.pid, startedAt: Date.now() };
+  writePending(pending);
   return { started: cmd, cwd: cfg.dir, port: cfg.port, log: logPath };
 }
 

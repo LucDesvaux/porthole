@@ -118,8 +118,14 @@ function renderProject(p) {
       });
     actions.appendChild(b);
   }
+  const busy = (p.pending || []);
+  const busyApp = busy.some((b) => b.what === "app");
+  const busySupabase = busy.some((b) => b.what === "supabase");
+
   if (p.configured) {
-    if (p.appRunning) {
+    if (busyApp) {
+      // start in flight — no button, the progress row below says what's happening
+    } else if (p.appRunning) {
       actions.appendChild(actionBtn("act", "RESTART", "kill app process, then run start command",
         () => post({ cmd: "restart", project: p.name }, `restarting ${p.name}…`, 2500)));
     } else if (!p.conflict) {
@@ -127,9 +133,10 @@ function renderProject(p) {
         `run start command${p.port ? ` on :${p.port}` : ""}`,
         () => post({ cmd: "start", project: p.name, what: "app" }, `starting ${p.name}…`, 2500)));
     }
-    if (p.hasSupabase && !p.supabaseRunning) {
-      actions.appendChild(actionBtn("act go", "START DB", "npx supabase start (takes ~30s)",
-        () => post({ cmd: "start", project: p.name, what: "supabase" }, `starting supabase for ${p.name}… (~30s)`, 8000)));
+    if (p.hasSupabase && !p.supabaseRunning && !busySupabase) {
+      actions.appendChild(actionBtn("act go", "START DB",
+        "npx supabase start — a first run pulls Docker images and can take several minutes",
+        () => post({ cmd: "start", project: p.name, what: "supabase" }, `starting supabase for ${p.name}…`, 1500)));
     }
   } else {
     // Not in the registry yet — offer one-click setup when a running process
@@ -160,7 +167,20 @@ function renderProject(p) {
     group.appendChild(c);
   }
 
-  if (!p.servers.length && !p.conflict) {
+  for (const b of busy) {
+    const secs = Math.max(0, Math.round((Date.now() - b.startedAt) / 1000));
+    const mmss = `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+    const row = elem("div", "working");
+    row.appendChild(elem("span", "spin", "◐"));
+    const body = elem("div", "main");
+    body.appendChild(elem("div", "working-title",
+      `${b.what === "supabase" ? "STARTING SUPABASE" : "STARTING APP"} · ${mmss}`));
+    if (b.last) body.appendChild(elem("div", "meta", b.last));
+    row.appendChild(body);
+    group.appendChild(row);
+  }
+
+  if (!p.servers.length && !p.conflict && !busy.length) {
     group.appendChild(elem("div", "meta idle", `offline${p.port ? ` · pinned :${p.port}` : ""}`));
   }
   for (const s of p.servers) group.appendChild(renderServer(s));

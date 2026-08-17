@@ -56,6 +56,14 @@ h1 { font-size: 14px; letter-spacing: 1px; color: var(--text); font-weight: 700;
 .act.go { color: var(--green); }
 .act.go:hover { border-color: var(--green); text-shadow: 0 0 6px var(--green); }
 .act:disabled { opacity: .5; cursor: wait; }
+.working {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--panel); border: 1px solid var(--amber);
+  border-radius: 3px; padding: 6px 8px; margin-bottom: 4px;
+}
+.working-title { color: var(--amber); font-weight: 600; letter-spacing: .5px; }
+.spin { color: var(--amber); animation: spin 1.2s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .act.add { color: var(--muted); border-style: dashed; }
 .act.add:hover { color: var(--green); border-color: var(--green); border-style: solid; }
 .act.stop { color: var(--amber); }
