@@ -76,29 +76,65 @@ function alive(pid) {
   }
 }
 
-function readPending() {
-  let all = {};
+const ATTEMPT_MAX_MS = 6 * 60 * 60 * 1000;
+
+function readState() {
+  let s;
   try {
-    all = JSON.parse(fs.readFileSync(PENDING_PATH, "utf8"));
+    s = JSON.parse(fs.readFileSync(PENDING_PATH, "utf8"));
   } catch {
-    return {};
+    return { pending: {}, attempts: {} };
   }
-  const now = Date.now();
-  const live = {};
-  for (const [key, p] of Object.entries(all)) {
-    if (alive(p.pid) && now - p.startedAt < PENDING_MAX_MS) live[key] = p;
-  }
-  if (Object.keys(live).length !== Object.keys(all).length) writePending(live);
-  return live;
+  // pre-2.4 files were a flat map of in-flight starts
+  if (!s.pending && !s.attempts) s = { pending: s, attempts: {} };
+  return { pending: s.pending || {}, attempts: s.attempts || {} };
 }
 
-function writePending(obj) {
+function writeState(s) {
   try {
     fs.mkdirSync(PORTHOLE_DIR, { recursive: true });
-    fs.writeFileSync(PENDING_PATH, JSON.stringify(obj, null, 2));
+    fs.writeFileSync(PENDING_PATH, JSON.stringify(s, null, 2));
   } catch {
     // best effort — progress display is not worth failing a start over
   }
+}
+
+// Retire finished starts into `attempts` so a start that died can still be
+// reported. We never see an exit code (the child is detached), so whether it
+// actually failed is judged by the caller: did the thing end up running?
+function refreshState() {
+  const s = readState();
+  const now = Date.now();
+  let changed = false;
+  for (const [key, p] of Object.entries(s.pending)) {
+    if (!alive(p.pid)) {
+      s.attempts[key] = { project: p.project, what: p.what, endedAt: now,
+                          tail: lastLogLine(p.project, p.what) };
+      delete s.pending[key];
+      changed = true;
+    } else if (now - p.startedAt >= PENDING_MAX_MS) {
+      delete s.pending[key];
+      changed = true;
+    }
+  }
+  for (const [key, a] of Object.entries(s.attempts)) {
+    if (now - a.endedAt > ATTEMPT_MAX_MS) {
+      delete s.attempts[key];
+      changed = true;
+    }
+  }
+  if (changed) writeState(s);
+  return s;
+}
+
+function dismissAttempt({ project, what }) {
+  const s = readState();
+  const key = `${project}::${what}`;
+  if (s.attempts[key]) {
+    delete s.attempts[key];
+    writeState(s);
+  }
+  return { ok: true };
 }
 
 // Last meaningful line of a log, for "Pulling fs layer…" style progress
@@ -290,18 +326,23 @@ async function buildReport() {
     if (!groups.has(name)) groups.set(name, []);
   }
 
-  const pending = readPending();
-  // A start that's still running should get a card even if nothing listens yet
-  for (const p of Object.values(pending)) {
+  const state = refreshState();
+  // In-flight or recently-failed starts get a card even if nothing listens yet
+  for (const p of [...Object.values(state.pending), ...Object.values(state.attempts)]) {
     if (!groups.has(p.project)) groups.set(p.project, []);
   }
 
   const projects = [...groups.entries()].map(([name, servers]) => {
     const cfg = registry[name] || null;
     const appRunning = servers.some((s) => s.kind === "app");
-    const busy = Object.values(pending)
+    const busy = Object.values(state.pending)
       .filter((p) => p.project === name)
       .map((p) => ({ what: p.what, startedAt: p.startedAt, last: lastLogLine(name, p.what) }));
+    const supabaseRunning = servers.some((s) => s.kind === "supabase");
+    // A finished start only counts as failed if the thing still isn't running
+    const failed = Object.values(state.attempts)
+      .filter((a) => a.project === name)
+      .filter((a) => (a.what === "supabase" ? !supabaseRunning : !appRunning));
     // Someone else squatting on this project's pinned port?
     let conflict = null;
     if (cfg && cfg.port && !appRunning) {
@@ -315,10 +356,11 @@ async function buildReport() {
       configured: !!cfg,
       port: cfg ? cfg.port : null,
       appRunning,
-      supabaseRunning: servers.some((s) => s.kind === "supabase"),
-      hasSupabase: cfg ? !!cfg.supabase : servers.some((s) => s.kind === "supabase"),
+      supabaseRunning,
+      hasSupabase: cfg ? !!cfg.supabase : supabaseRunning,
       conflict,
       pending: busy,
+      failed,
       logs: ["app", "supabase"].filter((w) =>
         fs.existsSync(path.join(LOG_DIR, `${name}-${w}.log`))),
     };
@@ -346,9 +388,11 @@ function startProject(name, what) {
   child.unref();
   // Record it so the popup can show progress across reopens — a Supabase
   // start can take minutes when Docker images need pulling
-  const pending = readPending();
-  pending[`${name}::${what}`] = { project: name, what, pid: child.pid, startedAt: Date.now() };
-  writePending(pending);
+  const s = readState();
+  const key = `${name}::${what}`;
+  delete s.attempts[key]; // superseded by this run
+  s.pending[key] = { project: name, what, pid: child.pid, startedAt: Date.now() };
+  writeState(s);
   return { started: cmd, cwd: cfg.dir, port: cfg.port, log: logPath };
 }
 
@@ -423,6 +467,8 @@ async function handle(msg) {
       return tailLog(msg.project, msg.what || "app");
     case "register":
       return registerProject(msg);
+    case "dismiss":
+      return dismissAttempt(msg);
     case "stop":
       return { ok: true, ...(await stopProject(msg.project, await buildReport())) };
     case "stopall": {

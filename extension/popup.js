@@ -180,7 +180,25 @@ function renderProject(p) {
     group.appendChild(row);
   }
 
-  if (!p.servers.length && !p.conflict && !busy.length) {
+  for (const f of (p.failed || [])) {
+    const row = elem("div", "failed");
+    const body = elem("div", "main");
+    body.appendChild(elem("div", "failed-title",
+      `${f.what === "supabase" ? "SUPABASE" : "APP"} START DIDN'T COME UP`));
+    if (f.tail) {
+      const tail = elem("div", "meta", f.tail);
+      tail.title = f.tail;
+      body.appendChild(tail);
+    }
+    body.appendChild(elem("div", "meta",
+      `see ${f.what === "supabase" ? "DB LOG" : "LOG"} above for the full output`));
+    row.appendChild(body);
+    row.appendChild(actionBtn("copy", "✕", "dismiss",
+      () => post({ cmd: "dismiss", project: p.name, what: f.what }, "dismissed", 200)));
+    group.appendChild(row);
+  }
+
+  if (!p.servers.length && !p.conflict && !busy.length && !(p.failed || []).length) {
     group.appendChild(elem("div", "meta idle", `offline${p.port ? ` · pinned :${p.port}` : ""}`));
   }
   for (const s of p.servers) group.appendChild(renderServer(s));

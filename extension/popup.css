@@ -56,6 +56,13 @@ h1 { font-size: 14px; letter-spacing: 1px; color: var(--text); font-weight: 700;
 .act.go { color: var(--green); }
 .act.go:hover { border-color: var(--green); text-shadow: 0 0 6px var(--green); }
 .act:disabled { opacity: .5; cursor: wait; }
+.failed {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: rgba(255,77,94,.07); border: 1px solid var(--red);
+  border-radius: 3px; padding: 6px 8px; margin-bottom: 4px;
+}
+.failed-title { color: var(--red); font-weight: 600; letter-spacing: .5px; }
+.failed .meta { white-space: normal; }
 .working {
   display: flex; align-items: center; gap: 8px;
   background: var(--panel); border: 1px solid var(--amber);

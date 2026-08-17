@@ -100,6 +100,10 @@ whether it has a Supabase stack:
   stack pulls Docker images and can take several minutes — the project shows a
   live **STARTING SUPABASE** row with elapsed time and the latest log line until
   it finishes, and that survives closing and reopening the popup.
+- If a start ends without the thing actually running, the project shows a red
+  **DIDN'T COME UP** notice with the last line of output, until you dismiss it
+  or start again. Common cause for Supabase: too many stacks competing for
+  Docker memory, which shows up as `container is not ready: unhealthy`.
 - Start/restart output is logged to `~/.porthole/logs/<project>-<what>.log`.
 - The file is re-read on every request — edit it and just reopen the popup.
 
